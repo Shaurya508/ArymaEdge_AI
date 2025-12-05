@@ -24,7 +24,7 @@ def get_spend_limits(csv_path):
     return limits
 
 # ---------- LLM ----------
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "AIzaSyAtEWB-VXuGPGUsEXqadvd9bTj9hmroiyA")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("Set GOOGLE_API_KEY in environment variables")
 

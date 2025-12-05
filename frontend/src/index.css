@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Light Theme (Default) */
+:root,
+[data-theme="light"] {
+  --primary: #1e40af;
+  --primary-light: #3b82f6;
+  --accent: #0ea5e9;
+  --accent-glow: rgba(14, 165, 233, 0.3);
+  
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f1f5f9;
+  --bg-input: #f8fafc;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-on-primary: #ffffff;
+  
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --success-border: #a7f3d0;
+  --warning: #f59e0b;
+  --error: #ef4444;
+
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  color: var(--text-primary);
+  background-color: var(--bg-page);
+  line-height: 1.6;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --primary: #60a5fa;
+  --primary-light: #93c5fd;
+  --accent: #22d3ee;
+  --accent-glow: rgba(34, 211, 238, 0.4);
+  
+  --bg-page: #0a0f1a;
+  --bg-surface: #1a1f2e;
+  --bg-elevated: #252b3d;
+  --bg-input: #2a3142;
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-on-primary: #0f172a;
+  
+  --border: #334155;
+  --border-light: #1e293b;
+  
+  --success: #34d399;
+  --success-bg: #064e3b;
+  --success-border: #065f46;
+  --warning: #fbbf24;
+  --error: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg-page);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+input,
+select {
+  font-family: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

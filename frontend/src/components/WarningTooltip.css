@@ -1,0 +1,180 @@
+.warning-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.warning-indicator {
+  position: relative;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.warning-indicator.warning {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #78350f;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.warning-indicator.error {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+  color: #7f1d1d;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.warning-indicator:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.warning-indicator.warning:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.warning-indicator.error:hover {
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.warning-tooltip {
+  position: fixed;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 0;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 9999;
+}
+
+.warning-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  animation: tooltipFadeIn 0.2s ease forwards;
+}
+
+/* Tooltip arrow */
+.tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--bg-surface);
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.1));
+}
+
+.tooltip-content {
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tooltip-warning-item {
+  padding: 14px 16px;
+  border-radius: 0;
+}
+
+.tooltip-warning-item:first-child {
+  border-radius: 12px 12px 0 0;
+}
+
+.tooltip-warning-item:last-child {
+  border-radius: 0 0 12px 12px;
+}
+
+.tooltip-warning-item:only-child {
+  border-radius: 12px;
+}
+
+.tooltip-warning-item.error {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.tooltip-warning-item.error:last-child {
+  border-bottom: none;
+}
+
+[data-theme="dark"] .tooltip-warning-item.error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(239, 68, 68, 0.15) 100%);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.tooltip-warning-item.warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.tooltip-warning-item.warning:last-child {
+  border-bottom: none;
+}
+
+[data-theme="dark"] .tooltip-warning-item.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.15) 100%);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.tooltip-warning-message {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.tooltip-warning-detail {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Responsive: show tooltip on the side for mobile */
+@media (max-width: 768px) {
+  .warning-tooltip {
+    left: auto;
+    right: 0;
+    transform: none;
+    bottom: calc(100% + 8px);
+  }
+
+  .warning-tooltip::after,
+  .warning-tooltip::before {
+    left: auto;
+    right: 20px;
+    transform: none;
+  }
+}
+

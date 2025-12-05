@@ -10,13 +10,23 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from google import genai
 
 from optimizers.predictor import predict_sales_for_spends
 from optimizers.default_optimizer import DefaultOptimizer, geometric_hill, CHANNELS, BETA_COLS
 from optimizers.ROI_optimizer import ROIOptimizer
 import plotly.graph_objects as go
 import plotly.express as px
+from dotenv import load_dotenv
+# Initialize Gemini client
+# gemini_client = genai.Client()
+load_dotenv()
+
+# Initialize Gemini client
+# genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+gemini_client = genai.Client(api_key = os.getenv("GOOGLE_API_KEY"))
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -26,6 +36,7 @@ R_CODE_DIR = BASE_DIR / "R code"
 SPENDS_DATA_CSV = R_CODE_DIR / "Spends Data.csv"
 HYPERPARAMS_CSV = R_CODE_DIR / "Hyperparams.csv"
 COEFS_CSV = R_CODE_DIR / "Coefs.csv"
+
 
 # Global optimizer instances
 default_optimizer_instance = None
@@ -102,6 +113,12 @@ class ReportRequest(BaseModel):
 
 class OptimizedSpendsRequest(BaseModel):
     optimized_spends: Optional[dict[str, float]] = Field(default=None, description="Dictionary of optimized spends by channel")
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., description="User message to send to the AI")
+    report_context: Optional[dict] = Field(default=None, description="Current report data for context")
+    chat_history: Optional[list] = Field(default=[], description="Previous chat messages for context")
 
 
 async def initialize_optimizers():
@@ -635,7 +652,7 @@ async def get_saturation_curves():
                                  showlegend=True,
                                  marker=dict(symbol="square", size=8, color="gray"),
                                  legendgroup="markers_sat",
-                                 hoverinfo='skip'))
+                                     hoverinfo='skip'))
         
         # Update layout - move legend to bottom
         fig.update_layout(
@@ -662,7 +679,7 @@ async def get_saturation_curves():
             margin=dict(b=100)
         )
         
-        # Return Plotly figure as JSON
+        # Return Plotly figure as JSON for saturation-curves endpoint
         return {"plotly_json": fig.to_json()}
     
     except Exception as e:
@@ -1014,3 +1031,154 @@ async def get_saturation_curves_with_optimized(request: OptimizedSpendsRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate saturation curves: {str(e)}")
+
+
+@app.post("/chat")
+async def chat_with_emmy(request: ChatRequest):
+    """
+    Chat with eMMMy AI assistant about optimization results.
+    Streams the response using Gemini 2.5 Flash.
+    """
+    try:
+        # Log received context for debugging
+        print(f"[Chat] Received message: {request.message}")
+        print(f"[Chat] Report context keys: {request.report_context.keys() if request.report_context else 'None'}")
+        if request.report_context:
+            print(f"[Chat] Context values: target_sales={request.report_context.get('target_sales')}, "
+                  f"predicted_sales={request.report_context.get('predicted_sales')}, "
+                  f"spends={bool(request.report_context.get('spends'))}, "
+                  f"report={bool(request.report_context.get('report'))}")
+        
+        # Build context from report data
+        context_parts = []
+        
+        if request.report_context:
+            context_parts.append("## Current Optimization Report Context:")
+            
+            # Previous month sales
+            if request.report_context.get("previous_month_sales"):
+                context_parts.append(f"- Previous Month Sales: ${request.report_context['previous_month_sales']:,.2f}")
+            
+            if request.report_context.get("target_sales"):
+                context_parts.append(f"- Target Sales: ${request.report_context['target_sales']:,.2f}")
+            
+            if request.report_context.get("predicted_sales"):
+                context_parts.append(f"- Predicted Sales: ${request.report_context['predicted_sales']:,.2f}")
+            
+            if request.report_context.get("optimizer_type"):
+                context_parts.append(f"- Optimizer Type: {request.report_context['optimizer_type'].upper()}")
+            
+            if request.report_context.get("spends"):
+                context_parts.append("\n### Optimized Spend Allocation:")
+                for channel, amount in request.report_context["spends"].items():
+                    if amount is not None:
+                        context_parts.append(f"  - {channel}: ${amount:,.2f}")
+            
+            if request.report_context.get("warnings"):
+                context_parts.append("\n### Warnings:")
+                for warning in request.report_context["warnings"]:
+                    if isinstance(warning, dict):
+                        context_parts.append(f"  - {warning.get('channel', 'N/A')}: {warning.get('message', '')} - {warning.get('detail', '')}")
+                    else:
+                        context_parts.append(f"  - {warning}")
+            
+            # Handle full report object (which contains 'report' array)
+            report_data = request.report_context.get("report")
+            if report_data:
+                # Check if it's the full report object with 'report' key
+                report_sections = report_data.get("report") if isinstance(report_data, dict) else report_data
+                
+                if report_sections and isinstance(report_sections, list):
+                    context_parts.append("\n### Detailed Optimization Report:")
+                    for section in report_sections:
+                        if isinstance(section, dict):
+                            context_parts.append(f"\n#### {section.get('title', 'Section')}:")
+                            if section.get("type") == "table" and section.get("data"):
+                                for row in section["data"]:
+                                    if isinstance(row, dict):
+                                        context_parts.append(
+                                            f"  - {row.get('channel', 'N/A')}: "
+                                            f"Optimized ${row.get('optimized_spend', 0):,.0f}, "
+                                            f"Historical Max ${row.get('historical_max', 0):,.0f}, "
+                                            f"Historical Avg ${row.get('historical_mean', 0):,.0f}, "
+                                            f"% of Max: {row.get('pct_of_max', 0):.1f}%, "
+                                            f"Risk: {row.get('risk_level', 'N/A')}"
+                                        )
+                            elif section.get("type") == "list" and section.get("items"):
+                                for item in section["items"]:
+                                    context_parts.append(f"  - {item}")
+                            elif section.get("content"):
+                                context_parts.append(f"  {section['content']}")
+        
+        context = "\n".join(context_parts)
+        
+        # Log context being sent to LLM
+        print(f"[Chat] Context for LLM:\n{context[:500]}..." if len(context) > 500 else f"[Chat] Context for LLM:\n{context}")
+        
+        # Build chat history for context
+        history_text = ""
+        if request.chat_history:
+            history_parts = []
+            for msg in request.chat_history[-10:]:  # Keep last 10 messages for context
+                role = "User" if msg.get("role") == "user" else "Assistant"
+                history_parts.append(f"{role}: {msg.get('content', '')}")
+            history_text = "\n".join(history_parts)
+        
+        # Build the prompt
+        system_prompt = """You are eMMMy, an AI marketing assistant specialized in Marketing Mix Modeling (MMM) and spend optimization. 
+You help marketers understand their optimization results, explain budget allocation recommendations, and provide actionable insights.
+
+Your personality:
+- Friendly and professional
+- Data-driven but accessible
+- Provide clear, actionable recommendations
+- Use simple language to explain complex concepts
+- Be concise but thorough
+
+When answering questions:
+- Reference specific numbers from the report when available
+- Explain trade-offs and reasoning behind recommendations
+- Suggest next steps when appropriate
+- If asked about something not in the data, acknowledge the limitation"""
+
+        full_prompt = f"""{system_prompt}
+
+{context}
+
+{f"Previous conversation:{chr(10)}{history_text}" if history_text else ""}
+
+User Question: {request.message}
+
+Please provide a helpful response:"""
+
+        async def generate_stream():
+            """Generate streaming response from Gemini."""
+            try:
+                response = gemini_client.models.generate_content_stream(
+                    model="gemini-2.5-flash",
+                    contents=[full_prompt]
+                )
+                
+                for chunk in response:
+                    if chunk.text:
+                        # Send each chunk as a Server-Sent Event
+                        yield f"data: {json.dumps({'text': chunk.text})}\n\n"
+                
+                # Send completion signal
+                yield f"data: {json.dumps({'done': True})}\n\n"
+                
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")

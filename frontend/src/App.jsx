@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import "./App.css";
 import SpendSlider from "./components/SpendSlider.jsx";
 import AskEmmmyDialog from "./components/AskEmmmyDialog.jsx";
+import ChatSidebar from "./components/ChatSidebar.jsx";
 import WarningTooltip from "./components/WarningTooltip.jsx";
 import SaturationCurves from "./pages/SaturationCurves.jsx";
 import { CHANNELS } from "./data/channels.js";
@@ -37,6 +38,7 @@ function App() {
   const [salesRange, setSalesRange] = useState(null);
   const [isLoadingSalesRange, setIsLoadingSalesRange] = useState(false);
   const [isApplyingOptimization, setIsApplyingOptimization] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const predictTimeoutRef = useRef(null);
 
   // Apply theme to document
@@ -274,7 +276,7 @@ function App() {
 
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isChatOpen ? "chat-open" : ""}`}>
       <header className="app-header">
         <div className="header-content">
           <div className="logo-icon">📊</div>
@@ -298,36 +300,45 @@ function App() {
           <button type="button" className="ask-btn" onClick={openDialog}>
             Let's Optimize
           </button>
+          <button 
+            type="button" 
+            className={`chat-btn ${!resultMeta ? 'disabled' : ''}`}
+            onClick={() => resultMeta && setIsChatOpen(true)}
+            disabled={!resultMeta}
+            title={!resultMeta ? "Run optimization first to chat with eMMMy" : "Chat with eMMMy about your results"}
+          >
+            Chat with eMMMy
+          </button>
         </div>
       </header>
 
-      {(resultMeta || livePredictedSales !== null) && (
-        <section className="summary-card">
-          {resultMeta && (
-            <>
+      <section className="summary-card">
+        <div>
+          <p className="summary-label">Previous Month Sales</p>
+          {/* hard coded value for previous month sales for now*/}
+          <h3>{currencyFormatter.format(9337020.85)}</h3>
+        </div>
+        {resultMeta && (
+          <>
+            <div>
+              <p className="summary-label">Optimizer</p>
+              <h3>{resultMeta.optimizerType.toUpperCase()}</h3>
+            </div>
+            {seasonalityBadges.length > 0 && (
               <div>
-                <p className="summary-label">Previous Month Sales</p>
-                {/* hard coded value for previous month sales for now*/}
-                <h3>{currencyFormatter.format(9337020.85)}</h3>
-              </div>
-              <div>
-                <p className="summary-label">Optimizer</p>
-                <h3>{resultMeta.optimizerType.toUpperCase()}</h3>
-              </div>
-              {seasonalityBadges.length > 0 && (
-                <div>
-                  <p className="summary-label">Seasonality</p>
-                  <div className="badge-row">
-                    {seasonalityBadges.map((badge) => (
-                      <span key={badge} className="badge">
-                        {badge}
-                      </span>
-                    ))}
-                  </div>
+                <p className="summary-label">Seasonality</p>
+                <div className="badge-row">
+                  {seasonalityBadges.map((badge) => (
+                    <span key={badge} className="badge">
+                      {badge}
+                    </span>
+                  ))}
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            )}
+          </>
+        )}
+        {(resultMeta || livePredictedSales !== null) && (
           <div>
             <div className="summary-label-row">
               {warnings.some((w) => w.channel === "Overall") && (
@@ -347,8 +358,8 @@ function App() {
                 : "—"}
             </h3>
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <div className="optimizer-layout">
         <section className="sliders-container">
@@ -471,6 +482,21 @@ function App() {
         onRun={runOptimization}
         isLoading={isOptimizing}
         error={dialogState.error}
+      />
+
+      <ChatSidebar
+        open={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        reportContext={{
+          previous_month_sales: 9337020.85,
+          target_sales: resultMeta?.targetSales,
+          predicted_sales: resultMeta?.predictedSales,
+          optimizer_type: resultMeta?.optimizerType,
+          spends: resultMeta?.spends,
+          seasonality: resultMeta?.seasonality,
+          warnings: warnings,
+          report: report,
+        }}
       />
     </div>
   );

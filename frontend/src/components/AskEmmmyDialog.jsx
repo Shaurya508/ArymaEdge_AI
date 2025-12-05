@@ -151,7 +151,7 @@ export default function AskEmmmyDialog({
     <div className="dialog-overlay" onClick={onClose}>
       <div className="dialog-card" onClick={(e) => e.stopPropagation()}>
         <header>
-          <h3>Ask eMMMy</h3>
+          <h3>Ask Nebula</h3>
           <button className="close-btn" onClick={onClose}>
             ✕
           </button>

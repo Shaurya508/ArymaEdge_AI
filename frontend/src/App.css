@@ -3,6 +3,7 @@
   margin: 0 auto;
   padding: 32px 40px 48px;
   min-height: 100vh;
+  transition: margin-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Header */
@@ -157,6 +158,52 @@ h1 {
   content: "✨";
 }
 
+/* Chat Button */
+.chat-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  padding: 12px 28px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25), 0 2px 8px rgba(16, 185, 129, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.chat-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.35), 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.chat-btn:active {
+  transform: translateY(0);
+}
+
+.chat-btn::before {
+  content: "💬";
+}
+
+.chat-btn.disabled,
+.chat-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+}
+
+.chat-btn.disabled:hover,
+.chat-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 /* Status Banner */
 .status-banner {
   background: var(--success-bg);
@@ -264,12 +311,31 @@ h1 {
   gap: 2rem;
   margin-top: 2rem;
   align-items: start;
+  transition: all 0.3s ease;
 }
 
 @media (max-width: 1400px) {
   .optimizer-layout {
     grid-template-columns: 1fr;
   }
+}
+
+/* When chat sidebar is open - stack layout */
+.app-shell.chat-open {
+  margin-right: 420px;
+  transition: margin-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-shell.chat-open .optimizer-layout {
+  grid-template-columns: 1fr;
+}
+
+.app-shell.chat-open .sliders-container {
+  order: 1;
+}
+
+.app-shell.chat-open .live-saturation-curves {
+  order: 2;
 }
 
 /* Sliders Container */
